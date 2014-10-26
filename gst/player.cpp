@@ -36,6 +36,15 @@ Player::Player(QWidget *parent)
     //this timer is used to tell the ui to change its position slider & label
     //every 100 ms, but only when the pipeline is playing
     connect(&m_positionTimer, SIGNAL(timeout()), this, SIGNAL(positionChanged()));
+
+    m_videoRecordBin = QGst::Bin::fromDescription(
+      "autovideosrc name=\"videosrc\" ! tee name=\"videotee\"  ! queue2 ! "
+      "theoraenc ! oggmux ! filesink name=\"outfilesink\" videotee. ! queue ! "
+      "autovideosink");
+
+    m_videoCaptureBin = QGst::Bin::fromDescription(
+      "autovideosrc name=\"videosrc\" ! autovideosink");
+
 }
 
 Player::~Player()
@@ -127,7 +136,6 @@ QGst::State Player::state() const
 
 void Player::play()
 {
-    stop();
     if (!m_pipeline) {
         m_pipeline = QGst::ElementFactory::make("playbin").dynamicCast<QGst::Pipeline>();
         if (m_pipeline) {
@@ -152,22 +160,37 @@ void Player::play()
     }
 }
 
-void Player::capture()
-{
-    stop();
-    if (!m_pipeline) {
-        QGst::BinPtr videoBin;
-        videoBin = QGst::Bin::fromDescription("autovideosrc name=\"videosrc\" ! autovideosink");
+void Player::capture() {
+  if (!m_pipeline) {
+    m_pipeline = QGst::Pipeline::create();
+    if (m_pipeline) {
+      m_pipeline->add(m_videoCaptureBin);
 
-        m_pipeline = QGst::Pipeline::create();
-        m_pipeline->add(videoBin);
-
-        watchPipeline(m_pipeline);
+      watchPipeline(m_pipeline);
+    } else {
+      qCritical() << "Failed to create the pipeline";
     }
 
     if (m_pipeline) {
-        m_pipeline->setState(QGst::StatePlaying);
+      m_pipeline->setState(QGst::StatePlaying);
     }
+  }
+}
+
+void Player::record() {
+  if (m_pipeline) {
+    m_pipeline->setState(QGst::StateNull);
+    m_pipeline->remove(m_videoCaptureBin);
+
+    QGst::ElementPtr fileSink;
+
+    fileSink = m_videoRecordBin->getElementByName("outfilesink");
+    fileSink->setProperty("location", "test1.ogg");
+
+    m_pipeline->add(m_videoRecordBin);
+
+    m_pipeline->setState(QGst::StatePlaying);
+  }
 }
 
 void Player::pause()

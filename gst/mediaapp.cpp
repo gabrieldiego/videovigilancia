@@ -221,7 +221,7 @@ void MediaApp::createUI(QBoxLayout *appLayout)
                               this, SLOT(open()), btnLayout);
 
     m_playButton = initButton(QStyle::SP_MediaPlay, tr("Play"),
-                              m_player, SLOT(play()), btnLayout);
+                              m_player, SLOT(record()), btnLayout);
 
     m_pauseButton = initButton(QStyle::SP_MediaPause, tr("Pause"),
                                m_player, SLOT(pause()), btnLayout);

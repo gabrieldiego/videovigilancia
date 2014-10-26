@@ -45,6 +45,7 @@ public Q_SLOTS:
     void pause();
     void stop();
     void capture();
+    void record();
     void setVolume(int volume);
 
 Q_SIGNALS:
@@ -56,6 +57,8 @@ private:
     void handlePipelineStateChange(const QGst::StateChangedMessagePtr & scm);
 
     QGst::PipelinePtr m_pipeline;
+    QGst::BinPtr m_videoRecordBin;
+    QGst::BinPtr m_videoCaptureBin;
     QTimer m_positionTimer;
     QString realUri;
 };
